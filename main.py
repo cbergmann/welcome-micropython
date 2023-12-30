@@ -1,11 +1,14 @@
-# Imports go at the top
+#Imports go at the top
 from microbit import *
-import music
 import radio
-from audio import SoundEffect
+import music
+import audio
 
 def on_gesture_screen_down():
-    audio.play(SoundEffect(waveform=SoundEffect.WAVEFORM_SINE,freq_start=849,freq_end=1,vol_start=255,vol_end=0,duration=1000,fx=SoundEffect.FX_NONE,shape=SoundEffect.SHAPE_LINEAR),wait=True)
+    if mode == "s":
+        radio.send("i XMAS")
+    effect = audio.SoundEffect(waveform=audio.SoundEffect.WAVEFORM_SINE,freq_start=849,freq_end=1,vol_start=255,vol_end=0,duration=1000,fx=audio.SoundEffect.FX_NONE,shape=audio.SoundEffect.SHAPE_LINEAR)
+    audio.play(effect,wait=True)
     display.show(Image.ASLEEP)
 
 def on_logo_touched():
@@ -28,71 +31,75 @@ def on_pin_pressed_p2():
     switch_mode("r")
 
 def on_gesture_shake():
-    display.show(Image("""
-        . # . # .
-        . . . . .
-        . . . . .
-        # # # # #
-        . . . . .
-        """))
-    audio.play(SoundEffect(waveform=SoundEffect.WAVEFORM_SINE,freq_start=3041,freq_end=3923,vol_start=59,vol_end=255,duration=500,fx=SoundEffect.FX_WARBLE,shape=SoundEffect.SHAPE_LINEAR),wait=False)
-    display.show(Image("""
-        . # . # .
-        . . . . .
-        . # # # .
-        # . . . #
-        . # # # .
-        """))
-    display.show(Image("""
-        . # . # .
-        . . . . .
-        . . . . .
-        # # # # #
-        . . . . .
-        """))
+    if mode == "s":
+        radio.send("l "
+        "00900:"
+        "00900:"
+        "99999:"
+        "00900:"
+        "00900")
+    display.show(Image(
+        "09090:"
+        "00000:"
+        "00000:"
+        "99999:"
+        "00000"))
+    effect = audio.SoundEffect(waveform=audio.SoundEffect.WAVEFORM_SINE,freq_start=3041,freq_end=3923,vol_start=59,vol_end=255,duration=500,fx=audio.SoundEffect.FX_WARBLE,shape=audio.SoundEffect.SHAPE_LINEAR)
+    audio.play(effect,wait=False)
+    display.show(Image(
+        "09090:"
+        "00000:"
+        "09990:"
+        "90009:"
+        "09990"))
+    display.show(Image(
+        "09090:"
+        "00000:"
+        "00000:"
+        "99999:"
+        "00000"))
 
 def switch_mode(newmode: str):
     global mode
     mode = newmode
     if mode == "s":
         music.stop()
-        speaker.off()
+        set_volume(0)
+        display.scroll(mode)
     else:
-        speaker.on()
-    display.scroll(mode)
-    sleep(500)
-    start()
+        set_volume(127)
+        audio.play(Sound.HELLO, wait=False)
+        display.show(Image.HEART)
 
 def on_button_pressed_ab():
-    if input.light_level() > 50:
+    if display.read_light_level() > 50:
         music.play(music.POWER_UP, wait=False)
-        display.show(Image("""
-            # . # . #
-            . # # # .
-            # # # # #
-            . # # # .
-            # . # . #
-            """))
+        display.show(Image(
+            "90909:"
+            "09990:"
+            "99999:"
+            "09990:"
+            "90909"))
     else:
         music.play(music.POWER_DOWN, wait=False)
-        display.show(Image("""
-            . . # # .
-            . . . # #
-            . . . # #
-            . . . # #
-            . . # # .
-            """))
+        display.show(Image(
+            "00990:"
+            "00099:"
+            "00099:"
+            "00099:"
+            "00990"))
 
 def on_received_string(receivedString):
     audio.play(Sound.GIGGLE,wait=False)
-    # basic.show_icon(IconNames[receivedString[2:]])
-    if receivedString.substr(0, 2) == "i ":
-        # TODO: decode image enum name
-        pass
-    elif receivedString.substr(0, 2) == "l ":
-        display.show(Image(receivedString.substr(2,50)))
+    #basic.show_icon(IconNames[receivedString[2:]])
+    if receivedString[0:2] == "i ":
+        image_const = receivedString[2:]
+        if hasattr(Image,image_const):
+            display.show(getattr(Image,image_const))
+    elif receivedString[0:2] == "l ":
+        display.show(Image(receivedString[2:50]))
     else:
-        display.scroll(receivedString)
+      display.scroll(receivedString)
 
 def on_button_pressed_b():
     if mode == "s":
@@ -103,16 +110,12 @@ def on_button_pressed_b():
 def on_pin_pressed_p1():
     switch_mode("s")
 
-def start():
-    audio.play(Sound.HELLO, wait=False)
-    display.show(Image.HEART)
-
-# Switch between modes r = recieve, s = send
+#Switch between modes r = recieve, s = send
 
 mode = "r"
 radio.on()
 radio.config(group=1)
-pin1.set_touch_mode(pin0.CAPACITIVE)
+pin1.set_touch_mode(pin1.CAPACITIVE)
 pin2.set_touch_mode(pin2.CAPACITIVE)
 pin_logo.set_touch_mode(pin_logo.CAPACITIVE)
 if button_a.is_pressed():
@@ -137,9 +140,9 @@ while True:
         on_button_pressed_a()
     elif button_b.was_pressed():
         on_button_pressed_b()
-    elif accelerometer.was_gesture('face_down'):
+    elif accelerometer.was_gesture("face down"):
         on_gesture_screen_down()
-    elif accelerometer.was_gesture('shake'):
+    elif accelerometer.was_gesture("shake"):
         on_gesture_shake()
         
     sleep(100)
